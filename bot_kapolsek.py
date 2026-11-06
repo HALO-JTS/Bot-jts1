@@ -131,7 +131,6 @@ def ambil_foto_harian(page, folder_url, jumlah_giat):
 def tutup_entri_opsional(page):
     """Menutup kartu 'Saran atau keluhan 1' dan 'Permintaan 1' (Tutup x) agar tidak menghalangi validasi."""
     try:
-        # Tutup kartu Permintaan pertolongan (QW7.3)
         btn_tutup = page.locator("button", has_text="Tutup")
         for i in range(btn_tutup.count()):
             if btn_tutup.nth(i).is_visible():
@@ -139,7 +138,6 @@ def tutup_entri_opsional(page):
                 btn_tutup.nth(i).click()
                 page.wait_for_timeout(400)
 
-        # Tutup kartu Saran atau keluhan (tombol ×)
         tombol_x = page.locator("xpath=//*[contains(text(), 'Saran atau keluhan')]/following::button[normalize-space()='×'][1]")
         if tombol_x.count() > 0 and tombol_x.first.is_visible():
             tombol_x.first.scroll_into_view_if_needed()
@@ -163,7 +161,6 @@ def pilih_pelaksana_kapolsek(page):
 
 
 def klik_semua_tombol_teks(page, teks, exact=True):
-    """Mengklik semua tombol yang sesuai teks (contoh: 'Ya' atau 'Ada')."""
     try:
         btns = page.get_by_role("button", name=teks, exact=exact)
         for i in range(btns.count()):
@@ -205,10 +202,8 @@ def klik_jam_sekarang(page):
 
 
 def pilih_semua_dropdown_form(page):
-    """Memilih opsi pertama pada semua dropdown 'Pilih' di dalam form laporan."""
     try:
         selects = page.locator("select")
-        # Lewati select pertama (index 0) karena itu adalah dropdown Jabatan di bagian atas
         for i in range(1, selects.count()):
             sel = selects.nth(i)
             if sel.is_visible():
@@ -251,7 +246,6 @@ def isi_link_foto_drive(page, link_foto):
         inputs_drive = page.locator("input[placeholder*='Google Drive'], input[placeholder*='drive.google.com']")
         for i in range(inputs_drive.count()):
             if inputs_drive.nth(i).is_visible():
-                # Jangan isi kolom MoU/kemitraan dengan link foto jika tidak diperlukan
                 placeholder_text = (inputs_drive.nth(i).get_attribute("placeholder") or "").lower()
                 if "mou" not in placeholder_text:
                     inputs_drive.nth(i).scroll_into_view_if_needed()
@@ -272,62 +266,53 @@ def klik_tetap_kirim_jika_ada(page):
 
 
 def isi_form_sesuai_kode(page, kode, link_foto):
-    """Mengisi seluruh field spesifik berdasarkan kode kegiatan (QW1.1 - QW1.8 & QW7.1 - QW7.4)."""
-    # 1. Klik tombol pembuka form (Ada / Ya) terlebih dahulu agar sub-kolom muncul
     if kode in ["QW1.1", "QW1.3", "QW1.6", "QW1.7", "QW1.8"]:
         klik_semua_tombol_teks(page, "Ada", exact=True)
     elif kode in ["QW7.1", "QW7.3"]:
         klik_semua_tombol_teks(page, "Ya", exact=True)
 
-    # 2. Pilih Pelaksana: Kapolsek
     pilih_pelaksana_kapolsek(page)
-
-    # 3. Tutup kartu opsional (Permintaan 1 & Saran/Keluhan 1)
     tutup_entri_opsional(page)
-
-    # 4. Isi Lokasi, Koordinat, Jam, dan Dropdown
     isi_lokasi_dan_koordinat(page)
     klik_jam_sekarang(page)
     pilih_semua_dropdown_form(page)
 
-    # 5. Penanganan spesifik per kode kegiatan
-    if kode == "QW1.1":  # Gatur pagi (Senin)
+    if kode == "QW1.1":
         isi_angka_kosong(page, "1")
 
-    elif kode == "QW1.2":  # Polisi peduli pendidikan (Senin)
+    elif kode == "QW1.2":
         klik_semua_tombol_teks(page, "Penyuluhan", exact=True)
         isi_input_berdasarkan_placeholder(page, "Materi", TEKS_MATERI_POLIDIK)
-        # Jika ada textarea/input materi tanpa placeholder spesifik
         textareas = page.locator("textarea")
         for i in range(textareas.count()):
             if textareas.nth(i).is_visible() and not (textareas.nth(i).input_value() or "").strip():
                 textareas.nth(i).fill(TEKS_MATERI_POLIDIK)
         isi_angka_kosong(page, JUMLAH_HADIR_DEFAULT)
 
-    elif kode == "QW1.3":  # Polisi peduli pengangguran (Kamis)
+    elif kode == "QW1.3":
         klik_semua_tombol_teks(page, "Merekrut", exact=False)
         isi_input_berdasarkan_placeholder(page, "mitra", TEKS_NAMA_MITRA)
         isi_input_berdasarkan_placeholder(page, "Mitra", TEKS_NAMA_MITRA)
         isi_angka_kosong(page, "5")
 
-    elif kode == "QW1.4":  # Kumpul bersama masyarakat (Rabu)
+    elif kode == "QW1.4":
         isi_input_berdasarkan_placeholder(page, "paguyuban", TEKS_KOMUNITAS)
         isi_angka_kosong(page, JUMLAH_HADIR_DEFAULT)
 
-    elif kode == "QW1.5":  # Green policing (Jumat)
+    elif kode == "QW1.5":
         klik_semua_tombol_teks(page, "Kerja bakti kebersihan", exact=True)
         isi_input_berdasarkan_placeholder(page, "Dinas Lingkungan Hidup", TEKS_PIHAK_IKUT)
         isi_angka_kosong(page, JUMLAH_HADIR_DEFAULT)
 
-    elif kode in ["QW1.6", "QW1.7"]:  # Jumling (Jumat) & Suling (Sabtu)
+    elif kode in ["QW1.6", "QW1.7"]:
         klik_semua_tombol_teks(page, "Jamaah", exact=True)
         isi_angka_kosong(page, JUMLAH_HADIR_DEFAULT)
 
-    elif kode == "QW1.8":  # Minggu kasih (Minggu)
+    elif kode == "QW1.8":
         klik_semua_tombol_teks(page, "Menyampaikan pesan kamtibmas", exact=True)
         isi_angka_kosong(page, JUMLAH_HADIR_DEFAULT)
 
-    elif kode == "QW7.1":  # Satu desa satu Bhabinkamtibmas
+    elif kode == "QW7.1":
         num_inputs = page.locator("input[type='number']")
         vis_nums = [num_inputs.nth(i) for i in range(num_inputs.count()) if num_inputs.nth(i).is_visible()]
         if len(vis_nums) >= 2:
@@ -336,29 +321,27 @@ def isi_form_sesuai_kode(page, kode, link_foto):
         isi_input_berdasarkan_placeholder(page, "mengusulkan", TEKS_UPAYA_BHABIN)
         isi_angka_kosong(page, JUMLAH_DESA)
 
-    elif kode == "QW7.2":  # Penataan personel
+    elif kode == "QW7.2":
         isi_angka_kosong(page, "0")
 
-    elif kode == "QW7.3":  # Polsek siaga 24 jam
+    elif kode == "QW7.3":
         klik_semua_tombol_teks(page, "Ya", exact=True)
         isi_angka_kosong(page, JUMLAH_PIKET)
 
-    elif kode == "QW7.4":  # Perkara ringan dan rembuk masyarakat
+    elif kode == "QW7.4":
         isi_angka_kosong(page, "0")
 
-    # 6. Pastikan lagi kartu saran tertutup dan isi link foto Google Drive
     tutup_entri_opsional(page)
     isi_link_foto_drive(page, link_foto)
 
 
 def jalankan_robot_kapolsek():
     wib_sekarang = datetime.now(timezone(timedelta(hours=7)))
-    idx_hari = wib_sekarang.weekday()  # 0=Senin ... 6=Minggu
+    idx_hari = wib_sekarang.weekday()
     nama_hari = NAMA_HARI_ID[idx_hari]
 
-    # Gabungkan kegiatan jadwal hari ini (QW1) + kegiatan wajib harian (QW7)
     giat_hari_ini = JADWAL_MINGGUAN_QW1.get(idx_hari, []) + KEGIATAN_HARIAN_QW7
-     daftar_kode_str = ", ".join([g["kode"] for g in giat_hari_ini])
+    daftar_kode_str = ", ".join([g["kode"] for g in giat_hari_ini])
 
     kirim_notif_telegram(
         f"🤖 Robot Kapolsek Posko PBM mulai berjalan...\n"
@@ -385,14 +368,12 @@ def jalankan_robot_kapolsek():
             page.goto("https://poskopbm.polri.go.id/input", timeout=60000, wait_until="domcontentloaded")
             page.wait_for_timeout(3000)
 
-            # 1. Login jika diminta
             if page.locator("input[type='password']").count() > 0:
                 page.locator("input[type='email'], input[type='text']").first.fill(EMAIL)
                 page.locator("input[type='password']").first.fill(PASSWORD)
                 page.get_by_role("button", name="Masuk").click()
                 page.wait_for_timeout(5000)
 
-            # 2. Isi Nama Pelapor & Pilih Jabatan Kapolsek/Wakapolsek
             page.get_by_label("Nama dan pangkat pelapor").fill(NAMA_PELAPOR)
             select_jabatan = page.locator("select").first
             opsi_kapolsek = select_jabatan.locator("option", has_text="Kapolsek").first
@@ -400,30 +381,25 @@ def jalankan_robot_kapolsek():
             select_jabatan.select_option(label=teks_jabatan)
             page.wait_for_timeout(2500)
 
-            # 3. Eksekusi seluruh kegiatan hari ini (QW1 sesuai hari + QW7 harian)
             for idx, item in enumerate(giat_hari_ini):
                 kode = item["kode"]
                 nama_tab = item["tab"]
                 nama_giat = item["nama"]
                 link_foto, no_foto, tot_foto = foto_harian[idx]
 
-                # Buka tab Quick Wins (QW1 atau QW7) jika sub-kegiatan belum tampil
                 if not page.get_by_text(kode).first.is_visible():
                     tab_el = page.locator("button", has_text=nama_tab).last
                     tab_el.scroll_into_view_if_needed()
                     tab_el.click()
                     page.wait_for_timeout(1500)
 
-                # Klik sub-kegiatan berdasarkan kode
                 giat_el = page.get_by_text(kode).last
                 giat_el.scroll_into_view_if_needed()
                 giat_el.click()
                 page.wait_for_timeout(2500)
 
-                # Isi seluruh kolom form sesuai kode kegiatan
                 isi_form_sesuai_kode(page, kode, link_foto)
 
-                # Kirim laporan
                 page.wait_for_timeout(1000)
                 btn_kirim = page.get_by_role("button", name="Kirim laporan")
                 btn_kirim.scroll_into_view_if_needed()
